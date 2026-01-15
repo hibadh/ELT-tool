@@ -60,36 +60,44 @@ def executer(j):
 
 for j in jobs:
   with st.expander(j['titre']):
-    with st.container(border=False):
+    col1, col2,col3=st.columns([1,1,1])
+    with col1:
       if st.button("Executer ",key=j['_id']):
         executer(j)
-      key = "Planification_form" + str(j['_id'])
+    key = "Planification_form" + str(j['_id'])
+
+    with col2:
       annuler = st.button("Annuler planification ",key=str(j['_id'])+"a")
+    with col3:
+      supp = st.button("Supprimer Job ",key=str(j['_id'])+"s")
 
-      with st.form(key=key):
-        date = st.date_input("Date")
-        heure = st.time_input("Heure")
-        options = ["chaque minute","chaque jour", "chaque semaine", "chaque mois"]
-        choix = st.selectbox("Choisissez une option :", options)
-        submit = st.form_submit_button("enregistrer " ,key=str(j['_id'])+"e")
-        dt = datetime.combine(date, heure) 
-       
-        if submit:
-          connect_mongo()
-          collection.update_one({"titre":j['titre']},{ "$set":{ "d":dt, "frequence":choix}})
-          if choix == "chaque minute":
-            scheduler.add_job(executer, trigger="interval", minutes=1, start_date=dt, args=[j], id=str(j["_id"]), replace_existing=True)
-          elif choix == "chaque jour":
-            scheduler.add_job(executer, trigger="interval", days=1, start_date=dt, args=[j], id=str(j["_id"]), replace_existing=True)
-          elif choix == "chaque semaine":
-            scheduler.add_job(executer, trigger="interval", weeks=1, start_date=dt, args=[j], id=str(j["_id"]), replace_existing=True)
-          elif choix == "chaque mois":
-            scheduler.add_job(executer, trigger="cron", day=dt.day, hour=dt.hour, minute=dt.minute, args=[j], id=str(j["_id"]), replace_existing=True)
-          st.success("Planification enregistrée !")
+    with st.form(key=key):
+      date = st.date_input("Date")
+      heure = st.time_input("Heure")
+      options = ["chaque minute","chaque jour", "chaque semaine", "chaque mois"]
+      choix = st.selectbox("Choisissez une option :", options)
+      submit = st.form_submit_button("enregistrer " ,key=str(j['_id'])+"e")
+      dt = datetime.combine(date, heure) 
+      
+      if submit:
+        connect_mongo()
+        collection.update_one({"titre":j['titre']},{ "$set":{ "d":dt, "frequence":choix}})
+        if choix == "chaque minute":
+          scheduler.add_job(executer, trigger="interval", minutes=1, start_date=dt, args=[j], id=str(j["_id"]), replace_existing=True)
+        elif choix == "chaque jour":
+          scheduler.add_job(executer, trigger="interval", days=1, start_date=dt, args=[j], id=str(j["_id"]), replace_existing=True)
+        elif choix == "chaque semaine":
+          scheduler.add_job(executer, trigger="interval", weeks=1, start_date=dt, args=[j], id=str(j["_id"]), replace_existing=True)
+        elif choix == "chaque mois":
+          scheduler.add_job(executer, trigger="cron", day=dt.day, hour=dt.hour, minute=dt.minute, args=[j], id=str(j["_id"]), replace_existing=True)
+        st.success("Planification enregistrée !")
 
-        if annuler:
-            collection.update_one(
-                {"titre": j['titre']},
-                {"$set": {"d": "", "frequence": ""}}
-            )
-            st.success("Planification annulée !")
+    if annuler:
+        collection.update_one(
+            {"_id": j['_id']},
+            {"$set": {"d": "", "frequence": ""}}
+        )
+        st.success("Planification annulée !")
+    if supp:
+      collection.delete_one({"_id": j['_id']})
+      st.success(j['titre']+" supprimé avec succès !")
